@@ -1,0 +1,204 @@
+/**
+ * JJTree template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */
+options
+{
+  static = true;
+}
+
+PARSER_BEGIN(CMMCompiler)
+
+import java.util.*;
+
+public class CMMCompiler{
+    public static void main(String[] args) throws ParseException{
+        new CMMCompiler(System.in);
+        SimpleNode n = CMMCompiler.Start();
+    }
+}
+
+PARSER_END(CMMCompiler)
+
+SKIP : {
+    " "
+    |  "\t"
+    |  "\n"
+    |  "\r"
+    |  <"//" (~["\n","\r"])* ("\n" | "\r" | "\r\n")>
+    |  <"/*" (~["*"])* "*" ("*" | ~["*","/"] (~["*"])* "*")* "/">
+}
+
+//瀹氫箟鍏抽敭瀛�
+TOKEN : {
+	<IF: "if">
+	| <ELSE: "else">
+	| <WHILE: "while">
+	| <READ: "read">
+	| <WRITE: "write">
+	| <INT: "int">
+	| <REAL: "real">
+	| <MAIN: "main">
+	| <VOID: "void" >
+}
+
+//瀹氫箟鑷劧鏁�
+TOKEN : {
+	<INTEGER_LITERAL: ["1"-"9"](<DIGIT>)* | "0">
+}
+
+//瀹氫箟瀹炴暟
+TOKEN : {
+	<REAL_LITERAL: (<DIGIT>)+
+	| (<DIGIT>)+"."
+	| (<DIGIT>)+"."(<DIGIT>)+
+	| "."(<DIGIT>)+>
+}
+
+//瀹氫箟琛ㄧず绗�
+TOKEN : {
+	<IDENTIFIER: <LETTER>
+	| <LETTER>(<LETTER> | <DIGIT> | "_")*(<LETTER> | <DIGIT>)+>
+	| <#LETTER: ["a"-"z", "A"-"Z"]>
+	| <#DIGIT: ["0"-"9"]>
+}
+
+TOKEN : /* OPERATORS */
+{
+  < PLUS : "+" >
+| < MINUS : "-" >
+| < MULTIPLY : "*" >
+| < DIVIDE : "/" >
+| < ASSIGN : "=" >
+}
+
+
+
+SimpleNode Start() : {}
+{
+    Procedure()
+    {
+        return jjtThis;
+    }
+}
+
+void Procedure() : {StatementTable st = new StatementTable(); boolean isTrue = true; boolean isLoop = false;}
+{
+        <VOID> <MAIN> "(" ")"Block(st, isTrue, isLoop)
+}
+
+void Block(StatementTable st, boolean isTrue, boolean isLoop) : {}
+{
+    "{" (Block(st, isTrue, isLoop) | (Statement(st, isTrue, isLoop))+)+ "}"
+}
+
+void Statement(StatementTable st, boolean isTrue, boolean isLoop) : {Token d = new Token(); Token i = new Token();}
+{
+    Declaration(st, isTrue, isLoop)
+    | Assignment(st, isTrue, isLoop)
+    | <WHILE> "(" Condition(st, isTrue, true) ")"Block(st, isTrue, true){
+        st.startLoop(isTrue, true);
+    }
+    | <READ> "(" d = <IDENTIFIER>{st.read(d,isTrue,isLoop);} (","d = <IDENTIFIER>{st.read(d,isTrue,isLoop);})* ")" ";" 
+    | <WRITE> "("(d= Expression(st, isTrue, isLoop)["["(i = <IDENTIFIER> | i = <INTEGER_LITERAL> )"]"] {
+        st.write(d,i, isTrue, isLoop);i.image = null;}
+    ) ("," d = Expression(st, isTrue, isLoop)["["(i = <IDENTIFIER> | i = <INTEGER_LITERAL> )"]"] {st.write(d,i, isTrue, isLoop);i.image = null;})* ")" ";"
+    | Choice(st, isTrue, isLoop)
+}
+
+void Declaration(StatementTable st, boolean isTrue, boolean isLoop) :
+{Token state = new Token(); Token type = new Token(); Token d = new Token();}
+{
+    (type = <INT> |type = <REAL>)[d = "[""]"](state = <IDENTIFIER>{
+      if(d.image == null) {
+        st.addtoArray(type,state, isTrue, isLoop);
+        }
+      else {
+        st.addtoArraylist(type,state, isTrue, isLoop);
+        d.image = null;
+        }
+      })
+    ("," [d = "[""]"]state = <IDENTIFIER>{if(d.image == null) {
+        st.addtoArray(type,state, isTrue, isLoop);       
+        }
+      else {
+        st.addtoArraylist(type,state, isTrue, isLoop);
+        d.image = null;
+        }})* ";"
+}
+
+void Assignment(StatementTable st, boolean isTrue, boolean isLoop) : {Token state;Token d;Token i=new Token();}
+{
+    (state = <IDENTIFIER>) ["["(i = <IDENTIFIER> | i = <INTEGER_LITERAL> )"]"] "=" (d = Expression(st, isTrue, isLoop)) ";"
+    { 
+      st.assign(state,i,d, isTrue, isLoop);}
+}
+
+Token Expression(StatementTable st, boolean isTrue, boolean isLoop) : { Token token = new Token(); Token d1 = new Token(); Token d2 = new Token();}
+{
+  d1 = Term(st, isTrue, isLoop) [LOOKAHEAD( { getToken(1).image == "+"
+|| getToken(1).image == "-" }) (token = <PLUS >|token = <MINUS>) d2 = Expression(st, isTrue, isLoop)]
+ {if(token.image !=null){
+   switch(token.image) {
+   	case "+":
+   	    st.plus(d1, d2, isTrue, isLoop);
+   		return d1;
+   	case "-":
+   	    st.minus(d1, d2, isTrue, isLoop);
+   		return d1;}
+   	}
+   	else {return d1; }
+  }
+}
+
+
+void Choice(StatementTable st, boolean isTrue, boolean isLoop) : {}
+{
+   	<IF> "(" isTrue = Condition(st, isTrue, isLoop) ")"Block(st, isTrue, isLoop)
+    (LOOKAHEAD( { getToken(1).image == "else" && getToken(2).image == "if" })<ELSE >< IF>"(" isTrue = Condition(st, isTrue, isLoop) ")" Block(st, isTrue, isLoop))*
+     [<ELSE> Block(st, !isTrue, isLoop)]
+}
+
+boolean Condition(StatementTable st, boolean isTrue, boolean isLoop) : {Token left = new Token(); Token right = new Token(); Token sign = new Token();}
+{
+    (left = Expression(st, isTrue, isLoop)) ((sign = ">") |(sign = "<") |(sign = "==") |(sign = "<>") |(sign = ">=") |(sign = "<=")) (right = Expression(st, isTrue, isLoop))
+    {
+      return st.condition(left,sign,right,isTrue,isLoop);
+    }
+}
+
+Token Term(StatementTable st, boolean isTrue, boolean isLoop) : { Token token = new Token(); Token d1 = new Token(); Token d2 = new Token(); }
+{
+ d1 = Factor(st, isTrue, isLoop) [LOOKAHEAD( { getToken(1).image == "*"
+|| getToken(1).image == "/" }) (token = <MULTIPLY >|token = <DIVIDE>) d2 = Term(st, isTrue, isLoop)]
+ {if(token.image !=null){
+   switch(token.image) {
+   	case "*":
+   	    st.mult(d1, d2, isTrue, isLoop);
+   		return d1;
+   	case "/":
+   	    st.div(d1, d2, isTrue, isLoop);
+   		return d1;}
+   	}else {return d1; }
+  }
+}
+
+
+Token Factor(StatementTable st, boolean isTrue, boolean isLoop) : {Token token = new Token();}
+{
+   (token = <IDENTIFIER>) {
+     	token.value = StatementTable.map.get(token.image);
+        return token;
+    }
+   | (token = <INTEGER_LITERAL>) {
+        token.value = Integer.parseInt(token.image);
+        return token;
+
+    }
+   | (token = <REAL_LITERAL>) {
+        token.value = Double.parseDouble(token.image);
+        return token;
+    }
+   | "(" token = Expression(st,isTrue, isLoop) ")"{return token;}
+}
+
+

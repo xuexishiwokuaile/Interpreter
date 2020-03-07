@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Layui</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link rel="stylesheet" href="layui/css/layui.css"  media="all">
+  <!-- 注意：如果你直接复制所有代码到本地，上述css路径需要改成你本地的 -->
+</head>
+<body>
+<button class="layui-btn" lay-submit="" lay-filter="add">确定</button>   
+          
+<script src="layui/layui.js" charset="utf-8"></script>
+<!-- 注意：如果你直接复制所有代码到本地，上述js路径需要改成你本地的 -->
+<script>
+    form.on('submit(add)', function(data){
+			alert("123");
+    		$.post("{:U('student/add_studentHd')}",data.field,function(res){
+    			if(res.status){
+    				layer.msg(res.info, {time: 2000});
+    				var url = "{:U('student/student_lists')}"; //
+    				setTimeout(window.location.href=url,2000);
+    				}else{
+    				layer.msg(res.info, {time: 2000});
+    			}
+    		},'json');
+    		return false;
+    	});
+    };
+  </script>
+</script>
+
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- 新 Bootstrap 核心 CSS 文件 -->
+    <link href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+    <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <title>web编辑器</title>
+    <style type="text/css" media="screen">
+        #box {
+            width: 100%;
+            height: 500px;
+        }
+
+        #box2 {
+            width: 100%;
+            height: 500px;
+        }
+        #editor {
+            width: 100%;
+            height: 100%;
+        }
+        #editor2 {
+            width: 100%;
+            height: 100%;
+        }
+        .ace_print-margin {
+            display: none;
+        }
+    </style>
+
+</head>
+
+<body>
+
+
+<div class = "menu-bar-container">
+    <nav class="navbar navbar-expand-sm bg-info navbar-dark fixed-top" role="navigation">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">⭐解释器</a>
+            </div>
+            <div>
+                <ul class="nav navbar-nav">
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            💾文件
+                            <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a id = "Save">保存</a></li>
+                            <li><a id = "Open">读取</a></li>
+                            <input type="button" id="fileImport"  style="display: none" value="读取">
+                            <input type="file" id="files"  accept=".cmm" style="display: none" onchange="fileImport();"/>
+                        </ul>
+                    </li>
+                    <li><a href="#">🛠设置</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            ✔运行
+                            <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#" id = "word_analyse">词法分析</a></li>
+                            <li><a href="#">语法分析</a></li>
+                            <li><a href="#">语义分析</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+<!--</div>-->
+<!--<div class="container-fluid">-->
+<!--    <div class="row-fluid">-->
+<!--        <div class="span12">-->
+
+<!--        </div>-->
+<!--    </div>-->
+<!--    <div class="row-fluid">-->
+
+        <div class="col-md-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4>
+                        源代码
+                    </h4>
+                </div>
+                <div class="panel-body">
+                    <div id="box" >
+                        <div id="editor">
+                            <div class="tools">
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4>
+                        运行结果
+                    </h4>
+                </div>
+                <div class="panel-body">
+                    <div id="box2" align="left">
+                        <div id="editor2" align="left">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+</div>
+
+<!--    </div>-->
+
+<!--</div>-->
+
+<!-- 主要文件 -->
+<script src="https://cdn.bootcss.com/ace/1.4.2/ace.js"></script>
+<!-- 用来提供代码提示和自动补全的插件 -->
+<script src="https://cdn.bootcss.com/ace/1.4.2/ext-language_tools.js"></script>
+<script>
+    // ace.require("ace/ext/language_tools");
+    // 初始化editor(）
+    var editor = ace.edit("editor");
+    editor.setOptions({
+        // 默认:false
+        wrap: true, // 换行
+        // autoScrollEditorIntoView: false, // 自动滚动编辑器视图
+        enableLiveAutocompletion: true, // 智能补全
+        enableSnippets: true, // 启用代码段
+        enableBasicAutocompletion: true, // 启用基本完成 不推荐使用
+    });
+    // 设置主题  cobalt monokai
+    editor.setTheme("ace/theme/monokai");
+    // 设置编辑语言
+    editor.getSession().setMode("ace/mode/c_cpp");
+    editor.setFontSize(12);
+    editor.setReadOnly(false);
+    editor.getSession().setTabSize(2);
+    editor.getSession().setUseWrapMode(true);
+    // 获取编辑内容
+    // var v = editor.getValue();
+    // console.log(v);
+    // 编辑内容搜索  快捷键打开->ctrl+f
+    // editor.execCommand('find');
+    // 设置编辑内容
+    // var editorValue = '<h2>测试数据</h2>';
+    // editor.setValue(editorValue);
+</script>
+<script src ="FileReader.js"></script>
+<script src = "FileSaver.js"></script>
+<!--自己写的脚本-->
+<script src="Operation.js"></script>
+<script>
+    $(document).ready(function () {
+        $("#Open").click(function () {
+            alert("Open success");
+            $("#fileImport").click();
+        })
+
+        $("#fileImport").click(function () {
+            $("#files").click();
+        })
+
+
+       $("#word_analyse").click(function () {
+           var editor = ace.edit("editor");
+           var editorValue = editor.getValue();
+           SendData(editorValue);
+           alert(editorValue);
+       })
+
+        function SendData(source) {
+            $.ajax({
+                type: "GET",
+                url: "Servlet",
+                data: {
+                    "Source": source
+                },
+                async: false,
+                success: function () {
+                alert("success");
+
+                },
+                error: function (xhr, status, errMsg) {
+                    alert("Data transmission failed!");
+                }
+            })
+        }
+    })
+
+
+    function fileImport() {
+        //获取读取我文件的File对象
+        alert("进入成功");
+        var selectedFile = document.getElementById('files').files[0];
+        var name = selectedFile.name;//读取选中文件的文件名
+        var size = selectedFile.size;//读取选中文件的大小
+        console.log("文件名:" + name + "大小:" + size);
+
+        var reader = new FileReader();//这是核心,读取操作就是由它完成.
+        reader.readAsText(selectedFile);//读取文件的内容,也可以读取文件的URL
+        reader.onload = function () {
+            //当读取完成后回调这个函数,然后此时文件的内容存储到了result中,直接操作即可
+            console.log(this.result);
+            var editor = ace.edit("editor");
+            var editorValue = this.result;
+            // this.result
+            editor.setValue(editorValue);
+        }
+    }
+</script>
+</body>
+
+</html>
